@@ -8,11 +8,11 @@ sudo systemctl stop domoticz
 
 # Make the current domoticz folder the disk resident copy :
 
-mv domoticz domoticz_disk_copy
+mv domoticz Domoticz_disk_copy
 
 # Just for during this setup, in case something goed wrong, better safe than sorry :-)
 
-sudo rsync -qa domoticz_disk_copy/ domoticz_disk_copy_bck/
+sudo rsync -qa  Domoticz_disk_copy/ Domoticz_disk_copy_bck/
 
 # Create a mountpoint for a ram disk which has the same name as the domoticz original installation folder :
 
@@ -40,7 +40,7 @@ df -h | grep /home/pi/domoticz
 
 # and see : tmpfs               200M     0  200M   0% /home/pi/domoticz
 
-# Change the service file domoticz.sh to make use of the ramdisk and the domoticz_disk_copy.
+# Change the service file domoticz.sh to make use of the ramdisk and the Domoticz_disk_copy.
 
 sudo geany /etc/init.d/domoticz.sh ( or use any other editor )
 
@@ -50,6 +50,7 @@ sudo geany /etc/init.d/domoticz.sh ( or use any other editor )
 # I upgraded several times and the script did not change.
 # Make sure to check it after every upgrade.
 -----------------------------------------------------------------------------------------
+
 #! /bin/sh
 ### BEGIN INIT INFO
 # Provides:          domoticz
@@ -84,7 +85,7 @@ DAEMON_ARGS="$DAEMON_ARGS -sslwww 444"
 #DAEMON_ARGS="$DAEMON_ARGS -syslog"
 
 # Exit if the package is not installed
-# JVe additions 1 start ( added a # at the beginning of the line )
+# JVe additions 1 start
 #[ -x "$DAEMON" ] || exit 0
 # JVe additions 1 end
 
@@ -196,6 +197,7 @@ case "$1" in
         rsync -qa --delete $RAMFOLDER $DISKFOLDER 
 #        case "$?" in
         case "$RETVAL" in
+#        case "$?" in
 # JVe additions 4 ( = 3 ) end
           0|1)
 # JVe additions 5 ( = 2 ) start
@@ -242,7 +244,7 @@ ls domoticz
 # And now you should see your files.
 
 
-# A stop of the service will copy the ramdisk to your domoticz_disk_copy folder.
+# A stop of the service will copy the ramdisk to your Domoticz_disk_copy folder.
 # A restart/reboot will do that too and also copy it back to the ramdisk.
 
 # To save data on a regular basis you may want to create a crontab job.
