@@ -18,27 +18,6 @@ sudo rsync -qa  Domoticz_disk_copy/ Domoticz_disk_copy_bck/
 
 mkdir domoticz
 
-# Add the ram disk mount in /etc/fstab
-
-sudo geany /etc/fstab &
-
-Add the next 4 lines :
-#
-# Mount a ramdisk for domoticz
-#
-tmpfs	        /home/pi/domoticz        tmpfs   noatime,nodev,nosuid,size=200M,uid=pi,gid=pi 0 0
-
-# Note that although the ramdisk is set up to be 200 MB it will only use as much as needed, the 200M is a limit
-
-# Mount the ramdisk
-
-sudo mount -a
-
-#Check if it there :
-
-df -h | grep /home/pi/domoticz
-
-# and see : tmpfs               200M     0  200M   0% /home/pi/domoticz
 
 # Change the service file domoticz.sh to make use of the ramdisk and the Domoticz_disk_copy.
 
@@ -50,7 +29,6 @@ sudo geany /etc/init.d/domoticz.sh ( or use any other editor )
 # I upgraded several times and the script did not change.
 # Make sure to check it after every upgrade.
 -----------------------------------------------------------------------------------------
-
 #! /bin/sh
 ### BEGIN INIT INFO
 # Provides:          domoticz
@@ -80,12 +58,13 @@ DAEMON=/home/pi/domoticz/$NAME
 DAEMON_ARGS="-daemon"
 #DAEMON_ARGS="$DAEMON_ARGS -daemonname $NAME -pidfile $PIDFILE"
 DAEMON_ARGS="$DAEMON_ARGS -www 8080"
-DAEMON_ARGS="$DAEMON_ARGS -sslwww 444"
+DAEMON_ARGS="$DAEMON_ARGS -sslwww 446"
 #DAEMON_ARGS="$DAEMON_ARGS -log /tmp/domoticz.txt"
 #DAEMON_ARGS="$DAEMON_ARGS -syslog"
 
 # Exit if the package is not installed
 # JVe additions 1 start
+# disable because there 'is/should be' nothing in the ram disk mount directory
 #[ -x "$DAEMON" ] || exit 0
 # JVe additions 1 end
 
@@ -151,23 +130,53 @@ do_stop()
 }
 
 case "$1" in
+
   start)
+
         [ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
 # JVe additions 2 start
-        rsync -qa --delete $DISKFOLDER $RAMFOLDER
+        # Mount and fill the RAM-disk before starting Domoticz
+        if ! mountpoint -q $RAMFOLDER; then
+            # clean up mount directory
+            rm -rf $RAMFOLDER/*
+            mount -t tmpfs -o noatime,nodev,nosuid,size=200M,uid=pi,gid=pi tmpfs $RAMFOLDER
+            rsync -qa --delete $DISKFOLDER $RAMFOLDER
+        else
+            log_end_msg 0
+            exit 0  # stop when already mounted
+        fi
 # JVe additions 2 end
+
+        # Start Domoticz
         do_start
         case "$?" in
-                0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-                2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+            0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
+            2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
         esac
         ;;
+
   stop)
         [ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
         do_stop
 # JVe additions 3 start
         RETVAL="$?"
-        rsync -qa --delete $RAMFOLDER $DISKFOLDER 
+        if mountpoint -q $RAMFOLDER; then
+            rsync -qa --delete $RAMFOLDER $DISKFOLDER
+            # Unmount the RAM-disk
+            umount $RAMFOLDER
+            while mountpoint -q $RAMFOLDER; do
+                umount $RAMFOLDER
+                if [ $? -eq 0 ]; then
+                    break  # stop after unmount success
+                fi
+                sleep 2
+            done
+
+            # Just to be sure add 'lazy unmount' option
+            if mountpoint -q $RAMFOLDER; then
+                umount -l $RAMFOLDER
+            fi
+        fi
 #        case "$?" in
         case "$RETVAL" in
 #        case "$?" in
@@ -194,7 +203,7 @@ case "$1" in
         do_stop
 # JVe additions 4 ( = 3 ) start
         RETVAL="$?"
-        rsync -qa --delete $RAMFOLDER $DISKFOLDER 
+        rsync -qa --delete $RAMFOLDER $DISKFOLDER
 #        case "$?" in
         case "$RETVAL" in
 #        case "$?" in

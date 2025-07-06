@@ -13,8 +13,9 @@ The idea behind is that when your Domoticz is NOT running :
  - there is a backup of your domoticz in a seperate backup folder
  - there is a ram drive mounted on your domoticz folder
 
-The /etc/init.d/domoticz when used to start :
+The /etc/init.d/domoticz.sh when used to start :
 
+ - mounts a ramdisk on the domoticz folder
  - copies the content from the backup folder to the ram drive
  - starts domoticz
  
@@ -22,12 +23,14 @@ The /etc/init.d/domoticz when used to stop :
 
  - stops domoticz
  - copies the content from the ram drive to the backup folder
+ - unmounts the ram disk
  
 The /etc/init.d/domoticz when used to restart :
 
  - uses the stop and start so......
  - stops domoticz
  - copies the content from the ram drive to the backup folder
+ - no unmount and remount of the ramdisk
  - copies the content from the backup folder to the ram drive
  - starts domoticz
 
