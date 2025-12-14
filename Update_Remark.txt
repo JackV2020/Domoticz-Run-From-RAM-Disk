@@ -1,0 +1,28 @@
+Standard when an update does not work because it thinks there is something wrong with your Internet connection it asks you to come back later.
+
+When that issue persists login as pi and:
+
+ - cd domoticz
+ - sudo ./updaterelease
+
+HOWEVER ALSO NOTE THAT:
+
+Why does my update not take any effect?
+
+Before an update Domoticz is stopped.
+
+Next the update is done.
+
+After the update Domoticz is started again.
+
+NOTE.. 
+
+The changes to /etc/init.d/domoticz.sh save the active situation after a stop....
+
+And retrieves that before the actual start....
+
+...this will be overwrite the performed update.
+
+Before you start the update put some #-signs before the rsync commands in your /etc/init.d/domoticz.sh.
+
+And remove them after the update.
